@@ -1,0 +1,163 @@
+---
+title: "Homework 1"
+editor_options:
+  markdown:
+    wrap: 72
+output: pdf_document
+---
+
+## Question 2.1
+
+**Describe a situation or problem from your job, everyday life, current
+events, etc., for which a classification model would be appropriate.
+List some (up to 5) predictors that you might use.**
+
+In Financial Institutions like banks, the issue of rogue trading in
+financial markets is hard to detect. It requires oversight from multiple
+cross-functional teams such as surveillance, risk, compliance, HR, and
+conduct to build sufficient yet tedious controls around it. Without Big
+Data capabilities, the process can be extremely manual and inefficient.
+On top of that, bribery or corruption can be easily exploited and used
+against manual inspections methods where key data points are concealed
+under the ever-growing amount of data flowing through the organization.
+
+In this aspect, a soft classification model could be used to assist in
+traditional inspection methods where extremely low-risk cases can be
+filtered to allow for more man-hours on high-risk ones. Working in this
+field, some of the key predictors I might use would include:
+
+1.  HR data on Tenure Length, Internal Employee Grade, Region, and even
+    Pay Grade that might determine loyalty, highlight underpaid
+    employees with higher risk, or to track high risk regions.
+
+2.  Transactional financial markets data on all trading positions
+    executed by a trader.
+
+3.  Line Manager and subordinate data for network analyses on potential
+    rogue trading associations across the team.
+
+4.  Conduct data on past performance in the bank.
+
+5.  Customer transactional data on suspicious purchase or
+    misuse/transfer of funds across accounts.
+
+\newpage
+
+## Question 2.2.1
+
+**Import Packages**
+
+```{r}
+library(kernlab)
+library(kknn)
+```
+
+**Load data**
+
+```{r}
+data <- read.table("C:/Users/Admin/Desktop/MM/Homework 1/credit_card_data.txt")
+head(data)
+```
+
+**Model function**
+
+```{r}
+svm_model <- function(ker, c){
+  model <<- ksvm(x = as.matrix(data[,1:10]),
+                y = as.factor(data[,11]),
+                type = "C-svc",
+                kernel = ker,
+                C = c,
+                scaled = TRUE)
+  pred <- predict(model,data[,1:10])
+  acc <- (sum(pred == data[,11]) / nrow(data))*100
+  print(acc)
+}
+```
+
+**Running 10 models with margins C=100 to 1000 with 100 step**
+
+```{r}
+for (x in seq(100, 1000, 100)){
+  print(paste("For C=", x))
+  svm_model("vanilladot", x)
+}
+```
+
+Accuracy at C=100:
+
+```{r}
+svm_model("vanilladot", 100)
+```
+
+**Calculate a1...am and a0 at c=100**
+
+```{r}
+a <- colSums(model@xmatrix[[1]] * model@coef[[1]])
+a0 <- model@b
+```
+
+**V1-V10:** `r a`
+
+**V0:** `r a0`
+
+**Equation of classifier:** -0.0010065348V1 -- 0.0011729048V2 --
+0.0016261967V3 + 0.0030064203V4 + 1.0049405641V5 -- 0.0028259432V6 +
+0.0002600295V7 -- 0.0005349551V8 -- 0.0012283758V9 + 0.1063633995V10 +
+0.08158492 = 0
+
+\newpage
+
+## Question 2.2.2
+
+**Using Radial Basis Kernel in SVM**
+
+Accuracy using Radial Basis Function kernel for svm:
+
+```{r}
+svm_model("rbfdot", 100)
+```
+
+**Using Polynomial Kernel in SVM**
+
+Accuracy using Radial Basis Function kernel for svm:
+
+```{r}
+svm_model("polydot", 100)
+```
+
+\newpage
+
+## Question 2.2.3
+
+**Model function**
+
+```{r}
+kknn_model <- function(k){
+  pred <- list()
+  for (i in 1:nrow(data)){ # every row in data
+    model <- kknn(V11~V1+V2+V3+V4+V5+V6+V7+V8+V9+V10, #v11 a function of v1-10
+                   data[-i,], # using all other data point to train
+                   data[i,], # train every data point, every row
+                   k = k,
+                   scale = TRUE) 
+    pred[i] <- as.integer(round(fitted(model))) # predictions given 0-1, round predictions to either 0 or 1 and insert  into list
+  }
+  
+  acc <- sum(pred == data[,11]) / nrow(data) * 100 # compare with dataset to get accuracy
+  return(acc)
+}
+```
+
+**Running model with 1-20 k-values**
+
+```{r}
+acc_list = list()
+for (i in 1:20){ # running model with 1-20 k-values
+  acc_list[i] <- kknn_model(i)  # list of accuracy for every k-value
+}
+acc_list
+```
+
+KNN-Classifier performs best at k=`r which.max(acc_list)` with an
+accuracy of `r max(unlist(acc_list))`.

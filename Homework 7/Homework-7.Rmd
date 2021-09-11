@@ -1,0 +1,177 @@
+---
+title: "Homework-7"
+output: pdf_document
+---
+
+# Question 10.1
+
+**Using the same crime data set uscrime.txt as in Questions 8.2 and 9.1, find the best model you can using**
+
+**(a) a regression tree model, and**
+
+**(b) a random forest model.**
+
+**In R, you can use the tree package or the rpart package, and the randomForest package. For each model, describe one or two qualitative takeaways you get from analyzing the results (i.e., don't just stop when you have a good model, but interpret it too).**
+
+### Regression Tree
+
+```{r}
+rm(list = ls())
+library(DAAG)
+library(tree)
+set.seed(42069)
+
+data = read.table("C:/Users/Admin/Desktop/MM/Homework 7/uscrime.txt",
+                  stringsAsFactors = FALSE, 
+                  header = TRUE)
+head(data)
+
+model = tree(Crime~., data = data)
+summary(model)
+
+# tree splits
+model$frame
+
+# Visualizing regression tree
+plot(model)
+text(model)
+
+# validating 7-leaf node model using cross-validation
+cv.model = cv.tree(model)
+plot(cv.model$size, cv.model$dev, type = 'b')
+
+# having 7 nodes yield least deviation in testing sets, no pruning required
+pred = predict(model, data)
+
+# visualizing predictions to actual
+plot(data$Crime, pred)
+abline(lm(pred~data$Crime))
+```
+
+### Random Forest
+
+```{r}
+rm(list = ls())
+library(randomForest)
+set.seed(42069)
+
+data = read.table("C:/Users/Admin/Desktop/MM/Homework 7/uscrime.txt",
+                  stringsAsFactors = FALSE, 
+                  header = TRUE)
+head(data)
+
+model = randomForest(Crime~.,
+                     data = data,
+                     mtry = floor(ncol(data)/3), # default of p no. of cols/3
+                     importance = TRUE)
+model
+
+# visualizing predictions
+pred = predict(model, data)
+plot(data$Crime, pred)
+abline(lm(pred~data$Crime))
+
+# r-squared
+SSR = sum((pred - data$Crime)^2)
+SST = sum((data$Crime - mean(data$Crime))^2)
+r = 1 - SSR/SST # r=0.88
+
+# variable importance in model
+importance(model)
+```
+
+\newpage
+
+# Question 10.2
+
+**Describe a situation or problem from your job, everyday life, current events, etc., for which a logistic regression model would be appropriate. List some (up to 5) predictors that you might use.**
+
+In the credit cards industry, credit loans are one of the most lucrative businesses for the banks. However, loan defaults can turn such opportunities to risks if not dealt with properly. Using a customer's data ranging from:
+
+1.  Credit history,
+2.  Spending patterns,
+3.  Networth,
+4.  and even Family size,
+
+the bank is able build an indicative and holistic profile of a customer on whether he/she will have a high chance of defaulting or not. In this case, a logistic regression for binary outcomes will be appropriate be it using a soft or hard classifier, the sensitivity rate to a default could also be adjusted depending on the bank's risk appetite.
+
+\newpage
+
+# Question 10.3
+
+1.  **Using the GermanCredit data set germancredit.txt from <http://archive.ics.uci.edu/ml/machine-learning-databases/statlog/german> / (description at <http://archive.ics.uci.edu/ml/datasets/Statlog+%28German+Credit+Data%29> ), use logistic regression to find a good predictive model for whether credit applicants are good credit risks or not. Show your model (factors used and their coefficients), the software output, and the quality of fit. You can use the glm function in R. To get a logistic regression (logit) model on data where the response is either zero or one, use family=binomial(link="logit") in your glm function call.**
+2.  **Because the model gives a result between 0 and 1, it requires setting a threshold probability to separate between "good" and "bad" answers. In this data set, they estimate that incorrectly identifying a bad customer as good, is 5 times worse than incorrectly classifying a good customer as bad. Determine a good threshold probability based on your model.**
+
+### Part 1
+
+```{r}
+rm(list=ls())
+library(pROC)
+set.seed(42069)
+data = read.table("C:/Users/Admin/Desktop/MM/Homework 7/germancredit.txt",
+                  sep = " ")
+head(data)
+
+# V21 is the default indicator
+data$V21[data$V21==1] = 0
+data$V21[data$V21==2] = 1
+
+# train:valid split 70:30
+train.idx = sample(nrow(data), size=nrow(data)*0.7)
+train = data[train.idx,]
+test = data[-train.idx,]
+
+# logistic model
+model = glm(V21~.,
+          family = binomial(link = "logit"),
+          data = train)
+summary(model)
+
+# model with significant predictors
+model = glm(V21~V1+V2+V3+V4+V5+V6+V7+V8+V14+V15+V20,
+          family = binomial(link = "logit"),
+          data=train)
+summary(model)
+
+# validating model on test data
+pred = predict(model, test, type = "response")
+pred # values between 0-1
+
+# confusion matrix
+pred_round = round(pred)
+cm = table(pred_round, test$V21)
+cm
+
+# Model's accuracy is (183 + 43) / (183 + 43 + 22 + 52) = 75%.
+acc = (cm[1,1]+cm[2,2])/sum(cm)
+acc
+
+# ROC curve
+rc = roc(test$V21, pred)
+plot(rc, main = "ROC Curve")
+rc # AUC
+```
+
+### Part 2
+
+```{r}
+# The loss of incorrectly classifying a "bad" customer is 5x
+loss = c()
+for(i in 1:100){
+  pred_round = as.integer(pred > (i/100)) # rounding using as.integer
+  cm = table(pred_round, test$V21)
+  if (nrow(cm) > 1){false_pos = cm[2,1]} else {false_pos = 0}
+  if (ncol(cm) > 1){false_neg = cm[1,2]*5} else {false_neg = 0}
+  loss[i] = false_neg + false_pos
+}
+
+# visualizing threshold to loss
+plot(c(1:100)/100,
+     loss,
+     xlab = "Threshold",
+     ylab = "Loss",
+     main = "Loss X Threshold")
+
+min(loss) # lowest loss score
+which.min(loss) # threshold with lowest loss
+```

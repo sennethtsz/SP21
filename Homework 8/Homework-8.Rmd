@@ -1,0 +1,117 @@
+---
+title: "Homework-8"
+output: 
+  pdf_document: 
+    latex_engine: xelatex
+---
+
+# Question 11.1
+
+**Using the crime data set uscrime.txt from Questions 8.2, 9.1, and 10.1, build a regression model using:**
+
+**1. Stepwise regression**
+
+**2. Lasso**
+
+**3. Elastic net**
+
+**For Parts 2 and 3, remember to scale the data first -- otherwise, the regression coefficients will be on different scales and the constraint won't have the desired effect.**
+
+**For Parts 2 and 3, use the glmnet function in R.**
+
+**Notes on R:**
+
+-   **For the elastic net model, what we called λ in the videos, glmnet calls "alpha"; you can get a range of results by varying alpha from 1 (lasso) to 0 (ridge regression) [and, of course, other values of alpha in between].**
+
+-   **In a function call like glmnet(x,y,family="mgaussian",alpha=1) the predictors x need to be in R's matrix format, rather than data frame format. You can convert a data frame to a matrix using as.matrix -- for example, x \<- as.matrix(data[,1:n-1])**
+
+-   **Rather than specifying a value of T, glmnet returns models for a variety of values of T.**
+
+## 1. Stepwise
+
+```{r}
+rm(list=ls())
+set.seed(42069)
+
+library(caret)
+library(glmnet)
+
+data = read.table("C:/Users/Admin/Desktop/MM/Homework 8/uscrime.txt",
+                  stringsAsFactors = FALSE, 
+                  header = TRUE)
+head(data)
+
+# exclude scaling binary and target variable
+data.scaled = as.data.frame(scale(data[,c(1,3,4,5,6,7,8,9,10,11,12,13,14,15)]))
+data.scaled = cbind(data.scaled, data[,c(2,16)])
+head(data.scaled)
+
+# backwards stepwise
+control = trainControl(method = 'repeatedcv',
+                       number = 5,
+                       repeats = 5)
+model.backwards = train(Crime~.,
+                        data = data.scaled,
+                        method = 'lmStepAIC',
+                        direction = 'backward',
+                        trControl = control)
+model = lm(Crime~M+Ed+Po1+U1+U2+Ineq+Prob, # variables from backwards stepwise
+           data = data.scaled)
+summary(model)
+
+# forward stepwise
+model.forward = train(Crime~.,
+                      data = data.scaled,
+                      method = 'glmStepAIC',
+                      direction = 'forward',
+                      trControl = control)
+model = lm(Crime~Po1+Ineq+Ed+Prob+M, # variables from forward stepwise
+           data = data.scaled)
+summary(model)
+```
+
+\newpage
+
+## 2. Lasso
+
+```{r}
+model.lasso = cv.glmnet(x = as.matrix(data.scaled[,-16]),
+                        y = as.matrix(data.scaled$Crime),
+                        alpha = 1, # 1 for lasso
+                        nfolds = 5,
+                        type.measure = 'mse',
+                        family = 'gaussian')
+coef(model.lasso, s = model.lasso$lambda.min)
+
+# dev.ratio = fraction of deviance explained, r squared, 1-dev/nulldev
+r.lasso = model.lasso$glmnet.fit$dev.ratio[which(model.lasso$glmnet.fit$lambda == model.lasso$lambda.min)]
+r.lasso
+```
+
+\newpage
+
+## 3. Elastic Net
+
+```{r}
+dev = list()
+for (i in 0:10){ # 0 for ridge, 1 for lasso
+  model.elastic = cv.glmnet(x = as.matrix(data.scaled[,-16]),
+                            y = as.matrix(data.scaled[,16]),
+                            alpha = i/10,
+                            nfolds = 5,
+                            type.measure = 'mse',
+                            family = 'gaussian')
+  dev[i] = model.elastic$glmnet.fit$dev.ratio[which(model.elastic$glmnet.fit$lambda == model.elastic$lambda.min)]
+}
+
+# run model with best alpha identified
+model.elastic = cv.glmnet(x = as.matrix(data.scaled[,-16]),
+                          y = as.matrix(data.scaled[,16]),
+                          alpha = which.max(dev)/10, # best alpha
+                          nfolds = 5,
+                          type.measure = 'mse',
+                          family = 'gaussian')
+coef(model.elastic, s = model.elastic$lambda.min)
+r.elastic = model.lasso$glmnet.fit$dev.ratio[which(model.lasso$glmnet.fit$lambda == model.lasso$lambda.min)]
+r.elastic
+```

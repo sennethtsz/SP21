@@ -1,0 +1,53 @@
+---
+title: "Homework-9"
+output: pdf_document
+---
+
+# Question 12.1
+
+**Describe a situation or problem from your job, everyday life, current events, etc., for which a design of experiments approach would be appropriate.**
+
+In Risk and Compliance, Assurance audits happen across all lines of business. Methodology used by auditing teams often slightly defer based on individual experiences in the field or level of relationship with the stakeholders. In this circumstance, businesses are finding audit reviews troublesome and does not provide enough value to the company. My team was tasked to identify factors that undermine the perceived value or actual value of audit reviews and at the end of preliminary data collection, we suggested a quasi experimentation on new ways of working aiming to address issues identified. In the experiment design, different review teams were given nudge packs on slightly different ways of engagement with the stakeholders designed to address those issues. Data would then be collected through surveys longitudinally from all parties involved for further analysis on effectiveness.
+
+\newpage
+
+# Question 12.2
+
+**To determine the value of 10 different yes/no features to the market value of a house (large yard, solar roof, etc.), a real estate agent plans to survey 50 potential buyers, showing a fictitious house with different combinations of features. To reduce the survey size, the agent wants to show just 16 fictitious houses. Use R's FrF2 function (in the FrF2 package) to find a fractional factorial design for this experiment: what set of features should each of the 16 fictitious houses have? Note: the output of FrF2 is "1" (include) or "-1" (don't include) for each feature.**
+
+```{r}
+rm(list=ls())
+
+library(FrF2)
+
+set.seed(42069)
+
+design = FrF2(nruns = 16, nfactors = 10)
+design
+```
+
+\newpage
+
+# Question 13.1
+
+**For each of the following distributions, give an example of data that you would expect to follow this distribution (besides the examples already discussed in class).**
+
+**a. Binomial**
+
+Number of loan defaults across a group of customers.
+
+**b. Geometric**
+
+Number of successful repaid loans until first default across a group of customers.
+
+**c. Poisson**
+
+Rate of customers arriving to a bank during peak hours.
+
+**d. Exponential**
+
+Interval timings between each customer's arrival to a bank during peak hours.
+
+**e. Weibull**
+
+Modeling new sign-up credit cards cancellation rates, using k\<1 as customers tend to have a higher likelihood of canceling their cards within the first few days of card activation and this decreases with time.

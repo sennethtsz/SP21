@@ -1,0 +1,105 @@
+---
+title: "Homework-5"
+output: pdf_document
+---
+
+# Question 8.1
+
+**Describe a situation or problem from your job, everyday life, current events, etc., for which a linear regression model would be appropriate. List some (up to 5) predictors that you might use.**
+
+In the Human Resource (HR) domain, the measurement and balance of staff happiness is an important indicator for the company's healthy development. Low happiness level could cause long term issues such as high turnover rates, lack of working morale, and even suppressed creativity in working domains. Using a simple linear regression model for this instance, we could try to model staffs' indicated happiness level working in the company. Some of the predictors that could be used on top of that are:
+
+1.  Productivity level (working hours)
+2.  Lunch hours (coupled with working hours for work-life balance indicators)
+3.  Remuneration level
+4.  Opinions towards upper management
+5.  Employee welfare
+
+\newpage
+
+# Question 8.2
+
+**Using crime data from <http://www.statsci.org/data/general/uscrime.txt> (file uscrime.txt, description at <http://www.statsci.org/data/general/uscrime.html> ), use regression (a useful R function is lm or glm) to predict the observed crime rate in a city with the following data:**
+
+**M = 14.0**
+
+**So = 0**
+
+**Ed = 10.0**
+
+**Po1 = 12.0**
+
+**Po2 = 15.5**
+
+**LF = 0.640**
+
+**M.F = 94.0**
+
+**Pop = 150**
+
+**NW = 1.1**
+
+**U1 = 0.120**
+
+**U2 = 3.6**
+
+**Wealth = 3200**
+
+**Ineq = 20.1**
+
+**Prob = 0.04**
+
+**Time = 39.0**
+
+**Show your model (factors used and their coefficients), the software output, and the quality of fit.**
+
+**Note that because there are only 47 data points and 15 predictors, you'll probably notice some overfitting. We'll see ways of dealing with this sort of problem later in the course.**
+
+```{r}
+library(GGally)
+library(boot)
+
+set.seed(42069)
+
+# load data
+data = read.table("C:/Users/Admin/Desktop/MM/Homework 5/uscrime.txt", 
+                  stringsAsFactors = FALSE,
+                  header = TRUE)
+head(data)
+
+# test data
+test = data.frame(M=14.0, So=0, Ed=10.0, Po1=12.0, Po2=15.5, LF=0.640,
+                  M.F=94.0, Pop=150, NW=1.1, U1=0.120, U2=3.6, 
+                  Wealth=3200, Ineq=20.1, Prob=0.040, Time = 39.0)
+```
+
+```{r}
+# build model
+model = glm(Crime~., data=data)
+summary(model)
+data %>% ggpairs(columns = c('Crime', 'M', 'Po1', 'U2', 'Ineq', 'Prob'),
+                 lower=list(continuous='smooth'))
+
+# model fit
+tss = sum((data$Crime - mean(data$Crime))^2) # total sum of squared
+rss = sum((model$residuals)^2) # residual sum of squared
+rsq = 1 - rss/tss
+```
+
+Model with all predictors yield R^2^ = `r 1 - rss/tss` , explaining `r (1 - rss/tss)*100` % of the data's variability. Using insignificant variables might overfit the data.
+
+```{r}
+# building model with significant variables only
+cmodel = glm(Crime~M+Ed+Po1+U2+Ineq+Prob, data=data)
+summary(cmodel)
+
+crss = sum((cmodel$residuals)^2) # residual sum of squared
+crsq = 1 - crss/tss
+```
+
+Model with significant predictors yield R^2^=`r 1 - crss/tss` , explaining `r (1 - crss/tss)*100` % of the data's variability. AIC is lower for this model as compared the previous.
+
+```{r}
+# prediction
+predict(cmodel, test)
+```

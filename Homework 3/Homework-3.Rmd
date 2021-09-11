@@ -1,0 +1,145 @@
+---
+title: "Homework-3"
+output: pdf_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+# Question 5.1
+
+**Using crime data from the file uscrime.txt
+(<http://www.statsci.org/data/general/uscrime.txt>, description at
+<http://www.statsci.org/data/general/uscrime.html>), test to see whether
+there are any outliers in the last column (number of crimes per 100,000
+people). Use the grubbs.test function in the outliers package in R.**
+
+**Import Packages**
+
+```{r}
+library(outliers)
+```
+
+**Load Data**
+
+```{r}
+data = read.table("C:/Users/Admin/Desktop/MM/Homework 3/uscrime.txt",
+                  stringsAsFactors = FALSE, 
+                  header = TRUE) 
+head(data)
+```
+
+**Visualize Data Distribution**
+
+```{r}
+# Histogram
+hist(data[,'Crime'], 
+     main = 'Crime Rate Distribution',
+     xlab = 'Crime Rate',
+     breaks = nrow(data),
+     xlim = c(min(data[,'Crime']),
+              max(data[,'Crime'])))
+
+# Boxplot
+boxplot(data[,'Crime'])
+```
+
+## 2-tailed test
+
+```{r}
+# Test for outliers on opposite tails of data distribution
+grubbs.test(data[,'Crime'],type=11)
+```
+
+2-tailed test returns with p-value = 1, meaning null hypothesis of both
+342 and 1993 are not outliers is not rejected.
+
+## 1-tailed test
+
+```{r}
+# Testing negative tail end outlier
+grubbs.test(data[,'Crime'],type=10, opposite = TRUE)
+```
+
+With p-value = 1, point 342 is not considered as an outlier.
+
+```{r}
+# Testing positive tail end outlier
+grubbs.test(data[,'Crime'],type=10, opposite = FALSE)
+```
+
+Depending on p-value threshold selected (0.1 or 0.05) we could choose to
+flag data point 1993 as an outlier or not.
+
+```{r}
+# If we were to exclude data point 1993 and run the test for outlier again
+data.new = data[-which.max(data[,'Crime']),]
+grubbs.test(data.new[,'Crime'],type=10, opposite = FALSE)
+```
+
+Data point 1969 with p-value \< 0.05 could also be considered as an
+outlier.
+
+```{r}
+# Removing data point 1969 
+data.new = data.new[-which.max(data.new[,'Crime']),]
+grubbs.test(data.new[,'Crime'],type=10, opposite = FALSE)
+```
+
+Data point 1674 with p-value \> 0.05 and 0.1, not an outlier according
+to Grubbs test.
+
+**Visualize Data Distribution after removing outlier**
+
+```{r}
+b = min(c(data[,'Crime'], data.new[,'Crime']))
+e = max(c(data[,'Crime'], data.new[,'Crime']))
+ax = pretty(b:e, n=12)
+
+hist1 = hist(data[,'Crime'], breaks = ax, plot = FALSE)
+hist2 = hist(data.new[,'Crime'], breaks = ax, plot = FALSE)
+
+c1 = rgb(0, 0, 255, max = 255, alpha = 70)
+c2 = rgb(0, 255, 0, max = 255, alpha = 70)
+
+plot(hist1, col = c1)
+plot(hist2, col = c2, add = TRUE)
+```
+
+\newpage
+
+# Question 6.1
+
+**Describe a situation or problem from your job, everyday life, current
+events, etc., for which a Change Detection model would be appropriate.
+Applying the CUSUM technique, how would you choose the critical value
+and the threshold?**
+
+In banks, cash movement and liquidity in all aspects of businesses are
+highly monitored to prevent potential bribery, corruption, fraud,
+terrorism financing, or even rogue trading. Retail banking in
+particular, it is important to track changes in transfer of funds across
+accounts, especially overseas. A change detection model in this
+circumstance would be insightful to help highlight these behaviors.
+Since there is little to no cost in a false positive detection, and on
+the other hand huge implications for not detecting such cases, it would
+make sense for the model to be fairly sensitive to large changes with
+low threshold level and a lower C value.
+
+\newpage
+
+# Question 6.2
+
+1.  **Using July through October daily-high-temperature data for Atlanta
+    for 1996 through 2015, use a CUSUM approach to identify when
+    unofficial summer ends (i.e., when the weather starts cooling off)
+    each year. You can get the data that you need from the file
+    temps.txt or online, for example at
+    <http://www.iweathernet.com/atlanta-weather-records> or
+    <https://www.wunderground.com/history/airport/KFTY/2015/7/1/CustomHistory.html>
+    . You can use R if you'd like, but it's straightforward enough that
+    an Excel spreadsheet can easily do the job too.**
+2.  **Use a CUSUM approach to make a judgment of whether Atlanta's
+    summer climate has gotten warmer in that time (and if so, when).**
+
+Please refer to excel sheet.
